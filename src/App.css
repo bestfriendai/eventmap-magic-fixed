@@ -1,0 +1,101 @@
+.event-marker {
+  @apply w-14 h-14 bg-background/90 backdrop-blur-md border-2 flex items-center justify-center cursor-pointer transition-all duration-300 shadow-lg hover:scale-110 hover:-translate-y-1 rounded-2xl;
+}
+
+.event-marker.realtime {
+  @apply border-blue-500 shadow-blue-500/20;
+}
+
+.event-marker:not(.realtime) {
+  @apply border-primary shadow-primary/20;
+}
+
+.event-marker:hover:not(.realtime) {
+  @apply border-primary/80 shadow-primary/30;
+}
+
+.event-marker.realtime:hover {
+  @apply border-blue-400 shadow-blue-500/30;
+}
+
+.event-marker-icon {
+  @apply w-7 h-7 text-foreground opacity-90;
+}
+
+.user-location-marker {
+  @apply w-8 h-8 relative;
+}
+
+.user-location-pulse {
+  @apply w-full h-full bg-blue-500/40 rounded-full absolute animate-pulse;
+}
+
+.user-location-dot {
+  @apply w-2/5 h-2/5 bg-blue-500 rounded-full absolute top-[30%] left-[30%] shadow-lg shadow-blue-500/60;
+}
+
+/* Map Styling Overrides */
+.mapboxgl-popup {
+  @apply max-w-none !important;
+}
+
+.mapboxgl-popup-content {
+  @apply !p-0 !rounded-xl !shadow-2xl !bg-transparent !backdrop-blur-md !border-none;
+}
+
+.mapboxgl-popup-close-button {
+  @apply !right-3 !top-3 !text-foreground/70 !bg-background/50 !w-8 !h-8 !rounded-full !flex !items-center !justify-center !text-lg !backdrop-blur-sm !border !border-border/10 !z-50;
+}
+
+.mapboxgl-popup-close-button:hover {
+  @apply !text-foreground !bg-background/70;
+}
+
+.mapboxgl-ctrl-group {
+  @apply !bg-background/75 !backdrop-blur-md !border !border-border !shadow-xl;
+}
+
+.mapboxgl-ctrl-group button {
+  @apply !border-border/10;
+}
+
+.mapboxgl-ctrl button:not(:disabled):hover {
+  @apply !bg-foreground/10;
+}
+
+.mapboxgl-ctrl-top-right {
+  @apply !flex !flex-col !gap-2 !p-4;
+}
+
+.mapboxgl-ctrl-bottom-left {
+  @apply !p-4;
+}
+
+.mapboxgl-ctrl-scale {
+  @apply !bg-background/75 !backdrop-blur-md !border !border-border !text-foreground/70;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.pulse-animation::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.5);
+  animation: pulse 2s ease-out infinite;
+}

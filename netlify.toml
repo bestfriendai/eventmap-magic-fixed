@@ -1,0 +1,33 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["netlify/functions/**/*"]
+  external_node_modules = ["@netlify/functions"]
+
+[dev]
+  functions = "netlify/functions"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "18"
+  VITE_MAPBOX_TOKEN = "pk.eyJ1IjoidHJhcHBhdCIsImEiOiJjbTMzODBqYTYxbHcwMmpwdXpxeWljNXJ3In0.xKUEW2C1kjFBu7kr7Uxfow"
+  MAPBOX_TOKEN = "pk.eyJ1IjoidHJhcHBhdCIsImEiOiJjbTMzODBqYTYxbHcwMmpwdXpxeWljNXJ3In0.xKUEW2C1kjFBu7kr7Uxfow"
+  VITE_TICKETMASTER_KEY = "7elxdku9GGG5k8j0Xm8KWdANDgecHMV0"
+  TICKETMASTER_KEY = "7elxdku9GGG5k8j0Xm8KWdANDgecHMV0"
+  VITE_EVENTBRITE_PRIVATE_TOKEN = "QGVOJ2QGDI2TMBZKOW5IKKPMZOVP6FA2VXLNGWSI4FP43BNLSQ"
+  EVENTBRITE_PRIVATE_TOKEN = "QGVOJ2QGDI2TMBZKOW5IKKPMZOVP6FA2VXLNGWSI4FP43BNLSQ"
+  VITE_RAPIDAPI_KEY = "33351bd536msha426eb3e02f04cdp1c6c75jsnb775e95605b8"
+  RAPIDAPI_KEY = "33351bd536msha426eb3e02f04cdp1c6c75jsnb775e95605b8"
+  VITE_SERPAPI_KEY = "18596fbf4a660faf2c48ceca0c19c385eba49ba054fc4db6ab1bb541d8f73c5d"
+  SERPAPI_KEY = "18596fbf4a660faf2c48ceca0c19c385eba49ba054fc4db6ab1bb541d8f73c5d"
+  VITE_GOOGLE_MAPS_KEY = "AIzaSyBNLrJhOMz6idD05pzwk17_0e6M-v1m6Hk"
+  GOOGLE_MAPS_KEY = "AIzaSyBNLrJhOMz6idD05pzwk17_0e6M-v1m6Hk"
