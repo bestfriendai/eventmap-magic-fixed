@@ -1,25 +1,25 @@
 import React, { useState, useCallback, memo, useEffect, useRef, useMemo } from 'react';
-import Map, { 
-  NavigationControl, 
-  Marker, 
-  Popup, 
-  ViewState, 
-  Source, 
-  Layer, 
+import Map, {
+  NavigationControl,
+  Marker,
+  Popup,
+  ViewState,
+  Source,
+  Layer,
   MapRef,
   GeolocateControl,
   FullscreenControl,
   ScaleControl
 } from 'react-map-gl';
 import type { LineLayerSpecification, CircleLayerSpecification, SymbolLayerSpecification } from 'mapbox-gl';
-import { 
-  MapPin, 
-  Calendar, 
-  Clock, 
-  Ticket, 
-  Maximize, 
-  Minimize, 
-  DollarSign, 
+import {
+  MapPin,
+  Calendar,
+  Clock,
+  Ticket,
+  Maximize,
+  Minimize,
+  DollarSign,
   ExternalLink,
   Layers,
   Map as MapIcon,
@@ -181,7 +181,19 @@ const EnhancedMap = memo(({
   const [mapStyle, setMapStyle] = useState<string>(MAP_STYLES.DARK);
   const [showClusters, setShowClusters] = useState<boolean>(true);
   const [show3D, setShow3D] = useState<boolean>(false);
-  
+
+  // Define getEventIcon function before using it in useMemo
+  const getEventIcon = useCallback((event: Event) => {
+    if (!event.categories || event.categories.length === 0) return '📍';
+
+    const category = event.categories[0].toLowerCase();
+    for (const [key, icon] of Object.entries(EVENT_ICONS)) {
+      if (category.includes(key)) return icon;
+    }
+
+    return '📍';
+  }, []);
+
   // Convert events to GeoJSON for clustering
   const eventsGeoJson: GeoJSON = useMemo(() => {
     const validEvents = events.filter(event => {
@@ -191,7 +203,7 @@ const EnhancedMap = memo(({
              lat !== 0 && lng !== 0 &&
              Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
     });
-    
+
     return {
       type: 'FeatureCollection',
       features: validEvents.map(event => ({
@@ -208,7 +220,7 @@ const EnhancedMap = memo(({
         }
       }))
     };
-  }, [events]);
+  }, [events, getEventIcon]);
 
   // Handle map initialization
   useEffect(() => {
@@ -221,15 +233,15 @@ const EnhancedMap = memo(({
         // Validate coordinates before flying to them
         const lat = userLocation.latitude;
         const lng = userLocation.longitude;
-        const isValid = lat && lng && !isNaN(lat) && !isNaN(lng) && 
-                       lat !== 0 && lng !== 0 && 
+        const isValid = lat && lng && !isNaN(lat) && !isNaN(lng) &&
+                       lat !== 0 && lng !== 0 &&
                        Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
-        
+
         if (!isValid) {
           console.warn(`Invalid user location coordinates:`, { lat, lng });
           return;
         }
-        
+
         setTimeout(() => {
           console.log('Centering on user location after initialization');
           try {
@@ -255,10 +267,10 @@ const EnhancedMap = memo(({
       // Validate coordinates before flying to them
       const lat = userLocation.latitude;
       const lng = userLocation.longitude;
-      const isValid = lat && lng && !isNaN(lat) && !isNaN(lng) && 
-                     lat !== 0 && lng !== 0 && 
+      const isValid = lat && lng && !isNaN(lat) && !isNaN(lng) &&
+                     lat !== 0 && lng !== 0 &&
                      Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
-      
+
       if (!isValid) {
         console.warn(`Invalid user location coordinates for centering:`, { lat, lng });
         return;
@@ -301,19 +313,19 @@ const EnhancedMap = memo(({
       // Validate coordinates before flying to them
       const lat = selectedEvent.latitude;
       const lng = selectedEvent.longitude;
-      const isValid = lat && lng && !isNaN(lat) && !isNaN(lng) && 
-                     lat !== 0 && lng !== 0 && 
+      const isValid = lat && lng && !isNaN(lat) && !isNaN(lng) &&
+                     lat !== 0 && lng !== 0 &&
                      Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
-      
+
       if (!isValid) {
-        console.warn(`Invalid coordinates for selected event:`, { 
+        console.warn(`Invalid coordinates for selected event:`, {
           id: selectedEvent.id,
           title: selectedEvent.title,
           lat, lng
         });
         return;
       }
-      
+
       // Cancel any ongoing animations
       if (mapRef.current) {
         mapRef.current.stop();
@@ -369,7 +381,7 @@ const EnhancedMap = memo(({
                                  Math.abs(eventLat) <= 90 && Math.abs(eventLng) <= 180;
 
       if (!isUserLocationValid || !isEventLocationValid) {
-        console.warn('Invalid coordinates for route calculation:', { 
+        console.warn('Invalid coordinates for route calculation:', {
           userLocation: { lat: userLat, lng: userLng, valid: isUserLocationValid },
           eventLocation: { lat: eventLat, lng: eventLng, valid: isEventLocationValid }
         });
@@ -416,16 +428,7 @@ const EnhancedMap = memo(({
     onEventSelect(null);
   }, [onEventSelect]);
 
-  const getEventIcon = useCallback((event: Event) => {
-    if (!event.categories || event.categories.length === 0) return '📍';
 
-    const category = event.categories[0].toLowerCase();
-    for (const [key, icon] of Object.entries(EVENT_ICONS)) {
-      if (category.includes(key)) return icon;
-    }
-
-    return '📍';
-  }, []);
 
   const formatDistance = (meters: number | null) => {
     if (meters === null) return null;
@@ -465,7 +468,7 @@ const EnhancedMap = memo(({
         const hour12 = hour % 12 || 12;
         return `${hour12}:${minutes} ${ampm}`;
       }
-      
+
       // Otherwise, try to parse it as a date
       const date = new Date(timeString);
       return date.toLocaleTimeString('en-US', {
@@ -482,16 +485,16 @@ const EnhancedMap = memo(({
     const features = mapRef.current?.queryRenderedFeatures(event.point, {
       layers: ['clusters']
     });
-    
+
     if (!features || features.length === 0) return;
-    
+
     const clusterId = features[0].properties.cluster_id;
     const mapboxSource = mapRef.current?.getSource('events');
-    
+
     // @ts-ignore - getClusterExpansionZoom exists but is not in the type definitions
     mapboxSource?.getClusterExpansionZoom(clusterId, (err: any, zoom: number) => {
       if (err) return;
-      
+
       mapRef.current?.easeTo({
         center: (features[0].geometry as Point).coordinates as [number, number],
         zoom: zoom + 0.5,
@@ -509,7 +512,7 @@ const EnhancedMap = memo(({
 
   const toggle3D = () => {
     setShow3D(!show3D);
-    
+
     if (mapRef.current) {
       if (!show3D) {
         // Enable 3D
@@ -551,7 +554,7 @@ const EnhancedMap = memo(({
         antialias={true}
         projection="globe"
       >
-        <GeolocateControl 
+        <GeolocateControl
           position="top-right"
           positionOptions={{ enableHighAccuracy: true }}
           trackUserLocation={true}
@@ -564,37 +567,37 @@ const EnhancedMap = memo(({
 
         {/* Map Controls */}
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-          <EnhancedButton 
-            size="icon" 
-            variant="glass" 
+          <EnhancedButton
+            size="icon"
+            variant="glass"
             onClick={toggleMapStyle}
             title="Change map style"
           >
             <Layers className="h-5 w-5" />
           </EnhancedButton>
-          
-          <EnhancedButton 
-            size="icon" 
-            variant="glass" 
+
+          <EnhancedButton
+            size="icon"
+            variant="glass"
             onClick={toggle3D}
             title="Toggle 3D view"
           >
             <Compass className="h-5 w-5" />
           </EnhancedButton>
-          
-          <EnhancedButton 
-            size="icon" 
-            variant="glass" 
+
+          <EnhancedButton
+            size="icon"
+            variant="glass"
             onClick={() => setShowClusters(!showClusters)}
             title={showClusters ? "Disable clustering" : "Enable clustering"}
           >
             {showClusters ? <MapPin className="h-5 w-5" /> : <MapIcon className="h-5 w-5" />}
           </EnhancedButton>
-          
+
           {onToggleFullscreen && (
-            <EnhancedButton 
-              size="icon" 
-              variant="glass" 
+            <EnhancedButton
+              size="icon"
+              variant="glass"
               onClick={onToggleFullscreen}
               title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
             >
@@ -677,12 +680,12 @@ const EnhancedMap = memo(({
           const isValid = lat && lng && !isNaN(lat) && !isNaN(lng) &&
                          lat !== 0 && lng !== 0 &&
                          Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
-          
+
           if (!isValid) {
             console.warn('Popup event has invalid coordinates:', { lat, lng });
             return null;
           }
-          
+
           return (
             <Popup
               longitude={lng}
@@ -769,9 +772,9 @@ const EnhancedMap = memo(({
                 </CardContent>
                 <CardFooter className="p-4 pt-0">
                   {popupEvent.url && (
-                    <EnhancedButton 
-                      variant="glass" 
-                      size="sm" 
+                    <EnhancedButton
+                      variant="glass"
+                      size="sm"
                       className="w-full"
                       rightIcon={<ExternalLink className="w-3 h-3" />}
                       onClick={() => window.open(popupEvent.url, '_blank')}
