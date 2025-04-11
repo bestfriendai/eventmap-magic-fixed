@@ -104,7 +104,7 @@ export default function RestaurantsPage() {
   return (
     <div className="h-screen w-screen relative overflow-hidden bg-black">
       <Header />
-      
+
       <div className="h-[calc(100vh-64px)] w-full mt-16 flex">
         <div className="w-[400px] border-r border-zinc-800 flex flex-col">
           <div className="p-4 border-b border-zinc-800">
@@ -147,32 +147,47 @@ export default function RestaurantsPage() {
             />
           </div>
         </div>
-        
+
         <div className="flex-1 relative">
-          <MapView 
-            events={restaurants.map(restaurant => ({
-              id: restaurant.id,
-              title: restaurant.name,
-              description: restaurant.categories.map(c => c.title).join(', '),
-              date: restaurant.hours?.[0]?.is_open_now ? 'Open Now' : 'Closed',
-              time: '',
-              location: {
-                latitude: restaurant.coordinates.latitude,
-                longitude: restaurant.coordinates.longitude,
-                address: restaurant.location.display_address.join(', ')
-              },
-              category: 'food-drink',
-              subcategory: restaurant.categories[0]?.title || 'Restaurant',
-              status: restaurant.is_closed ? 'closed' : 'open',
-              distance: restaurant.distance,
-              imageUrl: restaurant.image_url,
-              venue: {
-                name: restaurant.name,
-                city: restaurant.location.city,
-                state: restaurant.location.state,
-                rating: restaurant.rating
-              }
-            }))}
+          <MapView
+            events={restaurants
+              .filter(restaurant => {
+                // Filter out restaurants with invalid coordinates
+                const lat = restaurant.coordinates?.latitude;
+                const lng = restaurant.coordinates?.longitude;
+                const isValid = lat && lng && !isNaN(lat) && !isNaN(lng) &&
+                               lat !== 0 && lng !== 0 &&
+                               Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+
+                if (!isValid) {
+                  console.warn(`Restaurant ${restaurant.name} has invalid coordinates:`, restaurant.coordinates);
+                }
+
+                return isValid;
+              })
+              .map(restaurant => ({
+                id: restaurant.id,
+                title: restaurant.name,
+                description: restaurant.categories.map(c => c.title).join(', '),
+                date: restaurant.hours?.[0]?.is_open_now ? 'Open Now' : 'Closed',
+                time: '',
+                location: {
+                  latitude: restaurant.coordinates.latitude,
+                  longitude: restaurant.coordinates.longitude,
+                  address: restaurant.location.display_address.join(', ')
+                },
+                category: 'food-drink',
+                subcategory: restaurant.categories[0]?.title || 'Restaurant',
+                status: restaurant.is_closed ? 'closed' : 'open',
+                distance: restaurant.distance,
+                imageUrl: restaurant.image_url,
+                venue: {
+                  name: restaurant.name,
+                  city: restaurant.location.city,
+                  state: restaurant.location.state,
+                  rating: restaurant.rating
+                }
+              }))}
             onEventSelect={(event) => {
               const restaurant = restaurants.find(r => r.id === event.id);
               if (restaurant) {
@@ -180,32 +195,46 @@ export default function RestaurantsPage() {
               }
             }}
             userLocation={searchLocation || userLocation}
-            selectedEvent={selectedRestaurant ? {
-              id: selectedRestaurant.id,
-              title: selectedRestaurant.name,
-              description: selectedRestaurant.categories.map(c => c.title).join(', '),
-              date: selectedRestaurant.hours?.[0]?.is_open_now ? 'Open Now' : 'Closed',
-              time: '',
-              location: {
-                latitude: selectedRestaurant.coordinates.latitude,
-                longitude: selectedRestaurant.coordinates.longitude,
-                address: selectedRestaurant.location.display_address.join(', ')
-              },
-              category: 'food-drink',
-              subcategory: selectedRestaurant.categories[0]?.title || 'Restaurant',
-              status: selectedRestaurant.is_closed ? 'closed' : 'open',
-              distance: selectedRestaurant.distance,
-              imageUrl: selectedRestaurant.image_url,
-              venue: {
-                name: selectedRestaurant.name,
-                city: selectedRestaurant.location.city,
-                state: selectedRestaurant.location.state,
-                rating: selectedRestaurant.rating
+            selectedEvent={selectedRestaurant ? (() => {
+              // Validate coordinates before creating the event object
+              const lat = selectedRestaurant.coordinates?.latitude;
+              const lng = selectedRestaurant.coordinates?.longitude;
+              const isValid = lat && lng && !isNaN(lat) && !isNaN(lng) &&
+                             lat !== 0 && lng !== 0 &&
+                             Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+
+              if (!isValid) {
+                console.warn(`Selected restaurant ${selectedRestaurant.name} has invalid coordinates:`, selectedRestaurant.coordinates);
+                return null;
               }
-            } : null}
+
+              return {
+                id: selectedRestaurant.id,
+                title: selectedRestaurant.name,
+                description: selectedRestaurant.categories.map(c => c.title).join(', '),
+                date: selectedRestaurant.hours?.[0]?.is_open_now ? 'Open Now' : 'Closed',
+                time: '',
+                location: {
+                  latitude: selectedRestaurant.coordinates.latitude,
+                  longitude: selectedRestaurant.coordinates.longitude,
+                  address: selectedRestaurant.location.display_address.join(', ')
+                },
+                category: 'food-drink',
+                subcategory: selectedRestaurant.categories[0]?.title || 'Restaurant',
+                status: selectedRestaurant.is_closed ? 'closed' : 'open',
+                distance: selectedRestaurant.distance,
+                imageUrl: selectedRestaurant.image_url,
+                venue: {
+                  name: selectedRestaurant.name,
+                  city: selectedRestaurant.location.city,
+                  state: selectedRestaurant.location.state,
+                  rating: selectedRestaurant.rating
+                }
+              };
+            })() : null}
             isLoadingEvents={isLoading}
           />
-          
+
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4">
             <SearchBar
               onSearch={handleSearch}

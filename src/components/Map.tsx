@@ -158,9 +158,34 @@ const MapView = memo(({
         return;
       }
 
+      // Validate coordinates before fetching route
+      const userLat = userLocation.latitude;
+      const userLng = userLocation.longitude;
+      const eventLat = popupEvent.latitude;
+      const eventLng = popupEvent.longitude;
+
+      const isUserLocationValid = userLat && userLng && !isNaN(userLat) && !isNaN(userLng) &&
+                                 userLat !== 0 && userLng !== 0 &&
+                                 Math.abs(userLat) <= 90 && Math.abs(userLng) <= 180;
+
+      const isEventLocationValid = eventLat && eventLng && !isNaN(eventLat) && !isNaN(eventLng) &&
+                                 eventLat !== 0 && eventLng !== 0 &&
+                                 Math.abs(eventLat) <= 90 && Math.abs(eventLng) <= 180;
+
+      if (!isUserLocationValid || !isEventLocationValid) {
+        console.warn('Invalid coordinates for route calculation:', {
+          userLocation: { lat: userLat, lng: userLng, valid: isUserLocationValid },
+          eventLocation: { lat: eventLat, lng: eventLng, valid: isEventLocationValid }
+        });
+        setRouteData(null);
+        setRouteDistance(null);
+        setRouteDuration(null);
+        return;
+      }
+
       try {
         const response = await fetch(
-          `https://api.mapbox.com/directions/v5/mapbox/driving/${userLocation.longitude},${userLocation.latitude};${popupEvent.longitude},${popupEvent.latitude}?geometries=geojson&access_token=${import.meta.env.VITE_MAPBOX_TOKEN}`
+          `https://api.mapbox.com/directions/v5/mapbox/driving/${userLng},${userLat};${eventLng},${eventLat}?geometries=geojson&access_token=${import.meta.env.VITE_MAPBOX_TOKEN}`
         );
         const data = await response.json();
 
@@ -280,7 +305,14 @@ const MapView = memo(({
           </Marker>
         )}
 
-        {events.map(event => (
+        {events.filter(event => {
+          // Validate coordinates before creating markers
+          const lat = event.latitude;
+          const lng = event.longitude;
+          return lat && lng && !isNaN(lat) && !isNaN(lng) &&
+                 lat !== 0 && lng !== 0 &&
+                 Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+        }).map(event => (
           <Marker
             key={event.id}
             longitude={event.longitude}
@@ -299,16 +331,29 @@ const MapView = memo(({
           </Marker>
         ))}
 
-        {popupEvent && (
-          <Popup
-            longitude={popupEvent.longitude}
-            latitude={popupEvent.latitude}
-            anchor="bottom"
-            onClose={handlePopupClose}
-            closeOnClick={false}
-            closeButton={true}
-            maxWidth="400px"
-          >
+        {popupEvent && (() => {
+          // Validate popup coordinates
+          const lat = popupEvent.latitude;
+          const lng = popupEvent.longitude;
+          const isValid = lat && lng && !isNaN(lat) && !isNaN(lng) &&
+                         lat !== 0 && lng !== 0 &&
+                         Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+
+          if (!isValid) {
+            console.warn(`Popup event has invalid coordinates:`, { lat, lng });
+            return null;
+          }
+
+          return (
+            <Popup
+              longitude={lng}
+              latitude={lat}
+              anchor="bottom"
+              onClose={handlePopupClose}
+              closeOnClick={false}
+              closeButton={true}
+              maxWidth="400px"
+            >
             <div className="space-y-3">
               <h3 className="text-lg font-semibold">{popupEvent.title}</h3>
 
@@ -358,8 +403,9 @@ const MapView = memo(({
                 </a>
               )}
             </div>
-          </Popup>
-        )}
+            </Popup>
+          );
+        })()}
 
         {routeData && (
           <Source id="route-source" type="geojson" data={routeData}>
