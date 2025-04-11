@@ -70,14 +70,30 @@ const MapView = memo(({
 
       // If we already have a user location, center on it
       if (userLocation) {
+        // Validate coordinates before flying to them
+        const lat = userLocation.latitude;
+        const lng = userLocation.longitude;
+        const isValid = lat && lng && !isNaN(lat) && !isNaN(lng) &&
+                       lat !== 0 && lng !== 0 &&
+                       Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+
+        if (!isValid) {
+          console.warn(`Invalid user location coordinates:`, { lat, lng });
+          return;
+        }
+
         setTimeout(() => {
           console.log('Centering on user location after initialization');
-          mapRef.current?.flyTo({
-            center: [userLocation.longitude, userLocation.latitude],
-            zoom: 13,
-            duration: 2500,
-            essential: true
-          });
+          try {
+            mapRef.current?.flyTo({
+              center: [lng, lat],
+              zoom: 13,
+              duration: 2500,
+              essential: true
+            });
+          } catch (error) {
+            console.error('Error flying to user location:', error);
+          }
         }, 500); // Longer delay for initial load
       }
     }
@@ -90,6 +106,18 @@ const MapView = memo(({
     if (userLocation && mapRef.current && mapInitialized) {
       console.log('Centering map on user location:', userLocation);
 
+      // Validate coordinates before flying to them
+      const lat = userLocation.latitude;
+      const lng = userLocation.longitude;
+      const isValid = lat && lng && !isNaN(lat) && !isNaN(lng) &&
+                     lat !== 0 && lng !== 0 &&
+                     Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+
+      if (!isValid) {
+        console.warn(`Invalid user location coordinates for centering:`, { lat, lng });
+        return;
+      }
+
       // Don't use setViewState as it can conflict with the map's internal state
       // Instead, use the flyTo method directly which provides smoother animations
 
@@ -101,19 +129,21 @@ const MapView = memo(({
       // Use a short timeout to ensure the map is ready and any previous animations have stopped
       setTimeout(() => {
         if (mapRef.current) {
-          // Use enhanced flyTo options for smoother animation
-          mapRef.current.flyTo({
-            center: [userLocation.longitude, userLocation.latitude],
-            zoom: 13, // Slightly higher zoom for better visibility
-            duration: 2000, // Longer duration for smoother animation
-            essential: true, // This animation is considered essential
-            curve: 1.42, // Use a custom ease curve (1.42 is the default for flyTo)
-            speed: 1.2, // Slightly faster than default
-            screenSpeed: 1.2, // Consistent screen speed
-            padding: { top: 100, bottom: 300, left: 50, right: 50 } // Add padding to account for UI elements
-          });
-
-          // Mark that we've centered on the user (State removed as unused)
+          try {
+            // Use enhanced flyTo options for smoother animation
+            mapRef.current.flyTo({
+              center: [lng, lat],
+              zoom: 13, // Slightly higher zoom for better visibility
+              duration: 2000, // Longer duration for smoother animation
+              essential: true, // This animation is considered essential
+              curve: 1.42, // Use a custom ease curve (1.42 is the default for flyTo)
+              speed: 1.2, // Slightly faster than default
+              screenSpeed: 1.2, // Consistent screen speed
+              padding: { top: 100, bottom: 300, left: 50, right: 50 } // Add padding to account for UI elements
+            });
+          } catch (error) {
+            console.error('Error flying to user location:', error);
+          }
         }
       }, 150);
     }
@@ -122,6 +152,22 @@ const MapView = memo(({
   // Center map on selected event
   useEffect(() => {
     if (selectedEvent && mapRef.current) {
+      // Validate coordinates before flying to them
+      const lat = selectedEvent.latitude;
+      const lng = selectedEvent.longitude;
+      const isValid = lat && lng && !isNaN(lat) && !isNaN(lng) &&
+                     lat !== 0 && lng !== 0 &&
+                     Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+
+      if (!isValid) {
+        console.warn(`Invalid coordinates for selected event:`, {
+          id: selectedEvent.id,
+          title: selectedEvent.title,
+          lat, lng
+        });
+        return;
+      }
+
       // Cancel any ongoing animations
       if (mapRef.current) {
         mapRef.current.stop();
@@ -130,16 +176,20 @@ const MapView = memo(({
       // Use a short timeout to ensure the map is ready
       setTimeout(() => {
         if (mapRef.current) {
-          // Use enhanced flyTo options for smoother animation
-          mapRef.current.flyTo({
-            center: [selectedEvent.longitude, selectedEvent.latitude],
-            zoom: 15, // Higher zoom for event details
-            duration: 1800, // Slightly shorter than location animation
-            essential: true,
-            curve: 1.42,
-            speed: 1.0,
-            padding: { top: 100, bottom: 300, left: 50, right: 50 }
-          });
+          try {
+            // Use enhanced flyTo options for smoother animation
+            mapRef.current.flyTo({
+              center: [lng, lat],
+              zoom: 15, // Higher zoom for event details
+              duration: 1800, // Slightly shorter than location animation
+              essential: true,
+              curve: 1.42,
+              speed: 1.0,
+              padding: { top: 100, bottom: 300, left: 50, right: 50 }
+            });
+          } catch (error) {
+            console.error('Error flying to location:', error);
+          }
         }
       }, 100);
 
