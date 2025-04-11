@@ -60,6 +60,8 @@ export async function searchRestaurants(params: {
         });
 
         return tripAdvisorResults;
+      } else {
+        console.log('No restaurants found from TripAdvisor, falling back to Yelp');
       }
     } catch (tripAdvisorError) {
       console.error('Error fetching from TripAdvisor, falling back to Yelp:', tripAdvisorError);
@@ -84,7 +86,8 @@ export async function searchRestaurants(params: {
     const data = await response.json();
 
     if (data.error) {
-      throw new Error(data.error);
+      console.error('Yelp API error:', data.error);
+      throw new Error(JSON.stringify(data.error));
     }
 
     const restaurants = formatRestaurants(data.businesses || [], params);
@@ -106,7 +109,12 @@ export async function searchRestaurants(params: {
     };
   } catch (error) {
     console.error('Error fetching restaurants:', error);
-    throw error;
+    // Return empty results instead of throwing
+    return {
+      restaurants: [],
+      totalCount: 0,
+      hasMore: false
+    };
   }
 }
 

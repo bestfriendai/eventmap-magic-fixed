@@ -60,10 +60,16 @@ export async function searchTripAdvisorRestaurants(params: {
     }
 
     const data = await response.json();
-    
+
     if (data.error) {
+      console.error('TripAdvisor API returned an error:', data.error);
       throw new Error(data.error);
     }
+
+    console.log('TripAdvisor API response:', {
+      hasData: !!data.data,
+      restaurantsCount: data.data?.data?.length || 0
+    });
 
     // Format the restaurants
     const restaurants = formatTripAdvisorRestaurants(data.data?.data || [], params);
@@ -92,7 +98,7 @@ export async function searchTripAdvisorRestaurants(params: {
 export async function getTripAdvisorRestaurantDetails(restaurantId: string): Promise<Restaurant | null> {
   try {
     const queryParams = new URLSearchParams({
-      action: 'getDetails',
+      action: 'getDetailsV2',
       locationId: restaurantId,
       currencyCode: 'USD'
     });
@@ -105,7 +111,7 @@ export async function getTripAdvisorRestaurantDetails(restaurantId: string): Pro
     }
 
     const data = await response.json();
-    
+
     if (data.error) {
       throw new Error(data.error);
     }
@@ -162,12 +168,17 @@ interface TripAdvisorRestaurant {
 }
 
 function formatTripAdvisorRestaurants(results: TripAdvisorRestaurant[], params: SearchParams): Restaurant[] {
+  console.log(`Formatting ${results.length} TripAdvisor restaurants`);
+
   const formatted = results
     .map(result => {
       try {
         // Skip if no coordinates
         if (!result.latitude || !result.longitude) {
-          return null;
+          console.log(`Restaurant ${result.name || 'unknown'} missing coordinates, using default values`);
+          // Instead of skipping, use the search coordinates
+          result.latitude = params.latitude;
+          result.longitude = params.longitude;
         }
 
         const restaurant: Restaurant = {
@@ -226,7 +237,7 @@ function formatTripAdvisorRestaurants(results: TripAdvisorRestaurant[], params: 
           if (params.filters.price.length > 0 && !params.filters.price.includes(restaurant.price?.length.toString())) {
             return null;
           }
-          if (params.filters.categories.length > 0 && !restaurant.categories.some(c => 
+          if (params.filters.categories.length > 0 && !restaurant.categories.some(c =>
             params.filters.categories.includes(c.alias)
           )) {
             return null;
@@ -251,7 +262,7 @@ function formatTripAdvisorRestaurants(results: TripAdvisorRestaurant[], params: 
 
 function formatTripAdvisorRestaurantDetail(result: TripAdvisorRestaurant): Restaurant | null {
   if (!result) return null;
-  
+
   try {
     return {
       id: `ta-${result.locationId}`,
