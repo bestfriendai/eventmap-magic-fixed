@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Calendar, Utensils, Heart, MessageSquare, Search, LogOut, User, Menu, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { ThemeToggle } from './theme/ThemeToggle';
 import AuthModal from './AuthModal';
 import { Button } from "@nextui-org/react";
 
@@ -35,6 +36,11 @@ export default function Header() {
       to: '/restaurants',
       icon: <Utensils className="w-5 h-5" />,
       label: 'Restaurants'
+    },
+    {
+      to: '/design-system',
+      icon: <Heart className="w-5 h-5" />,
+      label: 'Design System'
     }
   ];
 
@@ -95,6 +101,11 @@ export default function Header() {
               <span className="hidden sm:inline text-sm font-medium">{link.label}</span>
             </Link>
           ))}
+
+          {/* Theme Toggle */}
+          <div className="ml-2">
+            <ThemeToggle />
+          </div>
 
           {currentUser ? (
             <div className="relative">
@@ -197,9 +208,9 @@ export default function Header() {
         )}
       </div>
 
-      <AuthModal 
-        isOpen={showAuthModal} 
-        onClose={() => setShowAuthModal(false)} 
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
       />
     </header>
   );

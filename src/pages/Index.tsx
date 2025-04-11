@@ -1,8 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import Map from '../components/Map';
+import EnhancedMap from '../components/EnhancedMap';
 import Header from '../components/Header';
-import SearchBar from '../components/SearchBar';
-import EventSidebar from '../components/EventSidebar';
+import EnhancedSearchBar from '../components/EnhancedSearchBar';
+import EnhancedEventSidebar from '../components/EnhancedEventSidebar';
 import { Event } from '../types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -21,14 +21,14 @@ export default function Index() {
       });
 
       if (error) throw error;
-      
+
       // Sort events by date (soonest first)
       const sortedEvents = data.events.sort((a: Event, b: Event) => {
         const dateA = new Date(`${a.date} ${a.time}`);
         const dateB = new Date(`${b.date} ${b.time}`);
         return dateA.getTime() - dateB.getTime();
       });
-      
+
       setEvents(sortedEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
@@ -59,10 +59,10 @@ export default function Index() {
       price: null,
       url: ''
     };
-    
+
     // Set this as the selected event to trigger the map transition
     setSelectedEvent(locationEvent);
-    
+
     // Fetch events for this location
     await fetchEventsForLocation(latitude, longitude);
   };
@@ -70,13 +70,14 @@ export default function Index() {
   return (
     <div className="h-screen w-screen relative overflow-hidden bg-background">
       <Header />
-      
+
       <div className="h-[calc(100vh-64px)] w-full mt-16 flex relative">
         {/* Search Bar */}
         <div className="absolute top-4 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-50">
-          <SearchBar
+          <EnhancedSearchBar
             onLocationChange={(location) => location && handleLocationFound(location.latitude, location.longitude)}
             onSearch={() => {}} // Add empty handler to satisfy prop requirements
+            isLoading={loading}
           />
         </div>
 
@@ -86,8 +87,8 @@ export default function Index() {
             showSidebar ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
-          <EventSidebar 
-            events={events} 
+          <EnhancedEventSidebar
+            events={events}
             loading={loading}
             selectedEvent={selectedEvent}
             onEventSelect={setSelectedEvent}
@@ -96,10 +97,11 @@ export default function Index() {
 
         {/* Map */}
         <div className="flex-1 relative">
-          <Map 
+          <EnhancedMap
             events={events}
             selectedEvent={selectedEvent}
             onEventSelect={setSelectedEvent}
+            isLoadingEvents={loading}
           />
         </div>
 
