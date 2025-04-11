@@ -108,7 +108,19 @@ export const handler: Handler = async (event) => {
       try {
         // If we found locations, get the first location ID and fetch restaurants for it
         if (data.data && data.data.length > 0) {
-          const firstLocation = data.data[0];
+          // Try to find a location with a locationId
+          const validLocations = data.data.filter(loc => loc.locationId);
+
+          if (validLocations.length === 0) {
+            console.log('No valid locations found with locationId');
+            return {
+              statusCode: 200,
+              headers,
+              body: JSON.stringify({ data: { data: [] } })
+            };
+          }
+
+          const firstLocation = validLocations[0];
           const locationId = firstLocation.locationId;
           console.log(`Found location: ${firstLocation.name} (${locationId}), fetching restaurants...`);
 
@@ -127,9 +139,10 @@ export const handler: Handler = async (event) => {
             const errorText = await restaurantsResponse.text();
             console.error('Error fetching restaurants:', errorText);
             return {
-              statusCode: restaurantsResponse.status,
+              statusCode: 200, // Return 200 even on error to prevent client-side crashes
               headers,
               body: JSON.stringify({
+                data: { data: [] },
                 error: `Error fetching restaurants: ${restaurantsResponse.status}`,
                 details: errorText
               })
@@ -138,6 +151,17 @@ export const handler: Handler = async (event) => {
 
           const restaurantsData = await restaurantsResponse.json();
           console.log(`Found ${restaurantsData.data?.data?.length || 0} restaurants`);
+
+          // Make sure we have valid restaurant data
+          if (!restaurantsData.data || !restaurantsData.data.data || !Array.isArray(restaurantsData.data.data)) {
+            console.log('Invalid restaurant data format');
+            return {
+              statusCode: 200,
+              headers,
+              body: JSON.stringify({ data: { data: [] } })
+            };
+          }
+
           return { statusCode: 200, headers, body: JSON.stringify(restaurantsData) };
         } else {
           console.log('No locations found for the given coordinates');
@@ -150,9 +174,10 @@ export const handler: Handler = async (event) => {
       } catch (error) {
         console.error('Error in searchNearby processing:', error);
         return {
-          statusCode: 500,
+          statusCode: 200, // Return 200 even on error to prevent client-side crashes
           headers,
           body: JSON.stringify({
+            data: { data: [] },
             error: 'Error processing location search results',
             message: error instanceof Error ? error.message : 'Unknown error'
           })
