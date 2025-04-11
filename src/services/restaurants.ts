@@ -1,4 +1,5 @@
 import { Restaurant, RestaurantFilter } from '../types/restaurant';
+import { searchTripAdvisorRestaurants, getTripAdvisorRestaurantDetails } from './tripadvisor';
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const PAGE_SIZE = 20;
@@ -42,6 +43,30 @@ export async function searchRestaurants(params: {
       };
     }
 
+    // Try to fetch from TripAdvisor first
+    try {
+      console.log('Attempting to fetch restaurants from TripAdvisor...');
+      const tripAdvisorResults = await searchTripAdvisorRestaurants(params);
+
+      if (tripAdvisorResults.restaurants.length > 0) {
+        console.log(`Found ${tripAdvisorResults.restaurants.length} restaurants from TripAdvisor`);
+
+        // Cache the full result set
+        cache.set(cacheKey, {
+          data: tripAdvisorResults.restaurants,
+          timestamp: now,
+          location: `${params.latitude},${params.longitude}`,
+          filters: JSON.stringify(params.filters)
+        });
+
+        return tripAdvisorResults;
+      }
+    } catch (tripAdvisorError) {
+      console.error('Error fetching from TripAdvisor, falling back to Yelp:', tripAdvisorError);
+    }
+
+    // Fallback to Yelp if TripAdvisor fails or returns no results
+    console.log('Falling back to Yelp API...');
     const queryParams = new URLSearchParams({
       latitude: params.latitude.toString(),
       longitude: params.longitude.toString(),
@@ -53,16 +78,17 @@ export async function searchRestaurants(params: {
     const response = await fetch(`/.netlify/functions/yelp-proxy?${queryParams}`);
 
     if (!response.ok) {
-      throw new Error('Failed to fetch restaurants');
+      throw new Error('Failed to fetch restaurants from Yelp');
     }
 
     const data = await response.json();
-    
+
     if (data.error) {
       throw new Error(data.error);
     }
 
     const restaurants = formatRestaurants(data.businesses || [], params);
+    console.log(`Found ${restaurants.length} restaurants from Yelp`);
 
     // Cache the full result set
     cache.set(cacheKey, {
@@ -81,6 +107,24 @@ export async function searchRestaurants(params: {
   } catch (error) {
     console.error('Error fetching restaurants:', error);
     throw error;
+  }
+}
+
+// Get detailed information about a specific restaurant
+export async function getRestaurantDetails(restaurantId: string): Promise<Restaurant | null> {
+  try {
+    // Check if it's a TripAdvisor restaurant ID
+    if (restaurantId.startsWith('ta-')) {
+      const taId = restaurantId.replace('ta-', '');
+      return await getTripAdvisorRestaurantDetails(taId);
+    }
+
+    // Otherwise, implement Yelp details fetching here if needed
+    // For now, return null for Yelp restaurants
+    return null;
+  } catch (error) {
+    console.error('Error fetching restaurant details:', error);
+    return null;
   }
 }
 
@@ -170,7 +214,7 @@ function formatRestaurants(results: YelpBusiness[], params: SearchParams): Resta
           if (params.filters.price.length > 0 && !params.filters.price.includes(restaurant.price?.length.toString())) {
             return null;
           }
-          if (params.filters.categories.length > 0 && !restaurant.categories.some(c => 
+          if (params.filters.categories.length > 0 && !restaurant.categories.some(c =>
             params.filters.categories.includes(c.alias)
           )) {
             return null;
